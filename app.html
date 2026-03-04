@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Midiendo Nuestro Mundo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --indigo-900:#1e1b4b;--indigo-800:#312e81;--indigo-700:#3730a3;
+  --indigo-600:#4338ca;--indigo-500:#6366f1;--indigo-400:#818cf8;
+  --indigo-200:#c7d2fe;--indigo-100:#e0e7ff;
+  --amber-400:#fbbf24;--amber-300:#fcd34d;
+  --teal-500:#14b8a6;--teal-400:#2dd4bf;
+  --green-500:#22c55e;--red-400:#f87171;
+  --white:#fff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Nunito',sans-serif;background:linear-gradient(160deg,var(--indigo-900) 0%,var(--indigo-800) 100%);min-height:100vh;color:white;}
+
+/* ── Header ─────────────────────────────────────────── */
+.header{background:rgba(0,0,0,0.25);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.1);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.header-left{display:flex;align-items:center;gap:12px;}
+.header-logo{font-size:28px;}
+.header-title{font-family:'Fredoka One',cursive;font-size:20px;}
+.header-sub{font-size:12px;color:var(--indigo-200);font-weight:700;}
+.header-right{display:flex;align-items:center;gap:16px;}
+.trophy-badge{background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:12px;padding:6px 14px;display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px;}
+.student-name{font-weight:700;font-size:14px;color:var(--indigo-200);}
+.btn-logout{background:rgba(255,255,255,0.1);border:none;color:white;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;padding:6px 14px;border-radius:10px;cursor:pointer;transition:background 0.2s;}
+.btn-logout:hover{background:rgba(255,255,255,0.2);}
+
+/* ── Main layout ─────────────────────────────────────── */
+.main{max-width:900px;margin:0 auto;padding:32px 20px;}
+.week-section{margin-bottom:40px;}
+.week-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;}
+.week-badge{font-family:'Fredoka One',cursive;font-size:13px;padding:4px 14px;border-radius:20px;letter-spacing:0.03em;}
+.week-title{font-family:'Fredoka One',cursive;font-size:22px;}
+
+/* Week colors */
+.week-1 .week-badge{background:#0d9488;} .week-1 .week-title{color:#5eead4;}
+.week-2 .week-badge{background:#7c3aed;} .week-2 .week-title{color:#c4b5fd;}
+.week-3 .week-badge{background:#b45309;} .week-3 .week-title{color:#fcd34d;}
+.week-4 .week-badge{background:#be185d;} .week-4 .week-title{color:#f9a8d4;}
+
+/* ── Activity cards ───────────────────────────────────── */
+.activities-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;}
+.act-card{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:20px;padding:20px;
+  cursor:pointer;
+  transition:transform 0.2s,box-shadow 0.2s,background 0.2s;
+  position:relative;
+  overflow:hidden;
+}
+.act-card:hover:not(.locked){transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,0.3);background:rgba(255,255,255,0.12);}
+.act-card.locked{cursor:not-allowed;filter:saturate(0);opacity:0.5;}
+.act-card.completed{border-color:rgba(34,197,94,0.4);background:rgba(34,197,94,0.08);}
+.act-card.perfect{border-color:rgba(251,191,36,0.5);background:rgba(251,191,36,0.08);}
+
+.act-icon{font-size:36px;margin-bottom:10px;display:block;}
+.act-title{font-family:'Fredoka One',cursive;font-size:16px;margin-bottom:4px;line-height:1.3;}
+.act-desc{font-size:12px;color:var(--indigo-200);font-weight:600;}
+.act-badge{position:absolute;top:12px;right:12px;font-size:20px;}
+.act-score{position:absolute;bottom:12px;right:12px;font-size:11px;font-weight:800;color:var(--amber-300);}
+.lock-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:28px;}
+
+/* ── Modal ───────────────────────────────────────────── */
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);
+  backdrop-filter:blur(8px);z-index:1000;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;pointer-events:none;transition:opacity 0.25s;
+  padding:20px;
+}
+.modal-backdrop.open{opacity:1;pointer-events:all;}
+.modal{
+  background:linear-gradient(160deg,var(--indigo-800),var(--indigo-900));
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:28px;
+  width:100%;max-width:620px;
+  max-height:85vh;overflow-y:auto;
+  padding:32px;
+  transform:scale(0.9) translateY(20px);
+  transition:transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 40px 100px rgba(0,0,0,0.5);
+}
+.modal-backdrop.open .modal{transform:scale(1) translateY(0);}
+.modal-header{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:24px;}
+.modal-title{font-family:'Fredoka One',cursive;font-size:24px;}
+.modal-icon{font-size:48px;margin-bottom:8px;}
+.btn-close{background:rgba(255,255,255,0.1);border:none;color:white;font-size:20px;width:36px;height:36px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.btn-close:hover{background:rgba(255,255,255,0.2);}
+.modal-question{font-size:18px;font-weight:700;margin-bottom:20px;line-height:1.5;color:var(--indigo-100);}
+
+/* Activity content styles */
+.options-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+.opt-btn{
+  padding:16px 12px;border-radius:16px;border:2px solid rgba(255,255,255,0.15);
+  background:rgba(255,255,255,0.07);color:white;
+  font-family:'Nunito',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all 0.15s;text-align:center;line-height:1.4;
+}
+.opt-btn:hover{border-color:var(--indigo-400);background:rgba(99,102,241,0.2);}
+.opt-btn.correct{border-color:var(--green-500);background:rgba(34,197,94,0.2);color:#86efac;}
+.opt-btn.wrong{border-color:var(--red-400);background:rgba(248,113,113,0.15);color:#fca5a5;}
+.opt-btn:disabled{cursor:not-allowed;}
+
+.feedback{font-size:16px;font-weight:800;text-align:center;padding:14px;border-radius:14px;margin-bottom:20px;display:none;}
+.feedback.show{display:block;}
+.feedback.correct{background:rgba(34,197,94,0.2);color:#86efac;border:1px solid rgba(34,197,94,0.3);}
+.feedback.wrong{background:rgba(248,113,113,0.15);color:#fca5a5;border:1px solid rgba(248,113,113,0.3);}
+
+.btn-next{
+  width:100%;padding:14px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,var(--indigo-500),var(--indigo-600));
+  color:white;font-family:'Fredoka One',cursive;font-size:18px;
+  cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;
+  box-shadow:0 4px 16px rgba(99,102,241,0.4);
+}
+.btn-next:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,0.5);}
+.btn-next:disabled{opacity:0.4;cursor:not-allowed;transform:none;}
+
+/* Drag-drop */
+.drag-items{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;}
+.drag-item{
+  padding:10px 18px;border-radius:12px;
+  background:rgba(99,102,241,0.25);border:2px solid var(--indigo-400);
+  font-weight:700;font-size:15px;cursor:grab;
+  user-select:none;transition:transform 0.1s;
+}
+.drag-item:active{cursor:grabbing;transform:scale(1.05);}
+.drag-item.used{opacity:0.3;pointer-events:none;}
+.drop-zone{
+  min-height:52px;border-radius:14px;border:2px dashed rgba(255,255,255,0.25);
+  display:flex;align-items:center;justify-content:center;padding:10px;
+  font-size:14px;color:rgba(255,255,255,0.4);font-weight:700;
+  transition:border-color 0.2s,background 0.2s;margin-bottom:12px;
+}
+.drop-zone.drag-over{border-color:var(--indigo-400);background:rgba(99,102,241,0.15);}
+.drop-zone.filled{border-color:var(--amber-300);background:rgba(251,191,36,0.1);color:var(--amber-300);}
+.drop-label{font-size:13px;color:var(--indigo-200);font-weight:700;margin-bottom:6px;}
+
+/* Grid area */
+.grid-container{display:inline-grid;gap:2px;margin-bottom:16px;}
+.grid-cell{
+  width:36px;height:36px;border:1px solid rgba(255,255,255,0.2);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;
+  cursor:pointer;transition:background 0.1s;border-radius:4px;
+}
+.grid-cell.filled{background:rgba(99,102,241,0.5);}
+.grid-cell.shape-cell{background:rgba(251,191,36,0.3);border-color:var(--amber-300);}
+
+/* Coins */
+.coins-area{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px;align-items:center;}
+.coin{cursor:pointer;transition:transform 0.15s;user-select:none;}
+.coin:hover{transform:scale(1.1);}
+.coin.selected{filter:drop-shadow(0 0 8px rgba(251,191,36,0.8));}
+.total-display{
+  font-family:'Fredoka One',cursive;font-size:22px;
+  color:var(--amber-300);text-align:center;
+  padding:12px;background:rgba(251,191,36,0.1);
+  border-radius:14px;border:1px solid rgba(251,191,36,0.3);
+  margin-bottom:16px;
+}
+
+/* Clock */
+.clock-face{
+  width:180px;height:180px;border-radius:50%;
+  border:4px solid var(--indigo-400);background:rgba(255,255,255,0.05);
+  position:relative;margin:0 auto 20px;
+}
+.clock-number{position:absolute;font-size:13px;font-weight:800;color:var(--indigo-200);}
+.clock-hand{position:absolute;bottom:50%;left:50%;transform-origin:bottom center;border-radius:4px;}
+.hand-hour{width:5px;background:white;height:50px;margin-left:-2.5px;}
+.hand-min{width:3px;background:var(--amber-300);height:68px;margin-left:-1.5px;}
+.hand-center{width:10px;height:10px;background:white;border-radius:50%;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}
+
+/* Text input */
+.text-input{
+  width:100%;padding:14px 18px;border-radius:14px;
+  border:2px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.07);
+  color:white;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;
+  outline:none;transition:border-color 0.2s;margin-bottom:16px;
+}
+.text-input:focus{border-color:var(--indigo-400);}
+
+/* Progress bar in modal */
+.progress-bar-wrap{background:rgba(255,255,255,0.1);border-radius:10px;height:8px;margin-bottom:20px;}
+.progress-bar-fill{height:100%;border-radius:10px;background:linear-gradient(90deg,var(--teal-400),var(--indigo-400));transition:width 0.4s ease;}
+
+/* ── Prize popup ──────────────────────────────────────── */
+.prize-popup{
+  position:fixed;inset:0;z-index:2000;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,0.6);backdrop-filter:blur(12px);
+  opacity:0;pointer-events:none;transition:opacity 0.3s;
+}
+.prize-popup.show{opacity:1;pointer-events:all;}
+.prize-card{
+  background:linear-gradient(135deg,var(--indigo-800),var(--indigo-900));
+  border:2px solid rgba(251,191,36,0.4);
+  border-radius:28px;padding:40px 36px;text-align:center;
+  max-width:360px;width:100%;
+  transform:scale(0.8);transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow:0 40px 80px rgba(0,0,0,0.5);
+}
+.prize-popup.show .prize-card{transform:scale(1);}
+.prize-emoji{font-size:80px;display:block;margin-bottom:16px;animation:prizeFloat 1s ease-in-out infinite;}
+@keyframes prizeFloat{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.prize-title{font-family:'Fredoka One',cursive;font-size:32px;margin-bottom:8px;}
+.prize-sub{color:var(--indigo-200);font-size:16px;font-weight:700;margin-bottom:24px;}
+.btn-prize{
+  padding:14px 40px;border-radius:16px;border:none;
+  background:linear-gradient(135deg,var(--amber-300),var(--amber-400));
+  color:var(--indigo-900);font-family:'Fredoka One',cursive;font-size:18px;
+  cursor:pointer;box-shadow:0 4px 20px rgba(251,191,36,0.4);
+  transition:transform 0.15s;
+}
+.btn-prize:hover{transform:scale(1.05);}
+
+/* ── Confetti ──────────────────────────────────────────── */
+.confetti-piece{position:fixed;width:10px;height:10px;pointer-events:none;z-index:3000;animation:confettiFall 2s ease-in forwards;}
+@keyframes confettiFall{
+  0%{transform:translateY(-20px) rotate(0deg);opacity:1;}
+  100%{transform:translateY(100vh) rotate(720deg);opacity:0;}
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="header">
+  <div class="header-left">
+    <span class="header-logo">📏</span>
+    <div>
+      <div class="header-title">Midiendo Nuestro Mundo</div>
+      <div class="header-sub">3er Grado · Matemáticas</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="trophy-badge">
+      <span>🏆</span><span id="trophyCount">0</span>
+      <span style="margin-left:4px">🥉</span><span id="medalCount">0</span>
+    </div>
+    <span class="student-name" id="studentNameDisplay"></span>
+    <button class="btn-logout" onclick="logout()">Salir</button>
+  </div>
+</header>
+
+<!-- Main -->
+<main class="main" id="mainContent"></main>
+
+<!-- Activity Modal -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal" id="activityModal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-icon" id="modalIcon"></div>
+        <div class="modal-title" id="modalTitle"></div>
+      </div>
+      <button class="btn-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressBar" style="width:0%"></div></div>
+    <div id="activityContent"></div>
+  </div>
+</div>
+
+<!-- Prize Popup -->
+<div class="prize-popup" id="prizePopup">
+  <div class="prize-card">
+    <span class="prize-emoji" id="prizeEmoji">🥉</span>
+    <div class="prize-title" id="prizeTitle">¡Lo lograste!</div>
+    <div class="prize-sub" id="prizeSub">Completaste la actividad</div>
+    <button class="btn-prize" onclick="closePrize()">¡Genial! 🎉</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DATA & STATE
+// ═══════════════════════════════════════════════════════════
+let session = null;
+let progress = {};
+let locks = {};
+let currentActivity = null;
+let currentQ = 0;
+let currentAnswers = [];
+
+function getData(k,fb){ try{return JSON.parse(localStorage.getItem(k))??fb;}catch{return fb;} }
+function setData(k,v){ localStorage.setItem(k,JSON.stringify(v)); }
+
+// ═══════════════════════════════════════════════════════════
+//  CURRICULUM — 4 semanas, 15 actividades
+// ═══════════════════════════════════════════════════════════
+const CURRICULUM = [
+  {
+    id:'week1', label:'Semana 1', title:'Longitudes', emoji:'📏',
+    color:'teal', badge:'#0d9488', titleColor:'#5eead4',
+    activities:[
+      {
+        id:'w1a1', icon:'📐', title:'¿Qué instrumento usamos?',
+        desc:'Identifica el instrumento correcto de medida',
+        type:'mcq',
+        questions:[
+          { q:'¿Qué instrumento usas para medir el largo de tu lápiz?',
+            opts:['Regla','Taza de medir','Báscula','Termómetro'], answer:0,
+            hint:'Una regla mide longitudes pequeñas.' },
+          { q:'¿Con qué instrumento medirías el largo de un salón de clases?',
+            opts:['Regla de 30cm','Cinta métrica','Vaso graduado','Reloj'], answer:1,
+            hint:'Para distancias largas necesitas una cinta métrica.' },
+          { q:'¿Qué instrumento usas para medir la altura de una persona?',
+            opts:['Báscula','Taza de medir','Cinta métrica','Termómetro'], answer:2,
+            hint:'La cinta métrica mide alturas y longitudes.' },
+          { q:'Marco quiere medir el largo de su libro. ¿Qué debe usar?',
+            opts:['Báscula','Regla','Vaso graduado','Reloj'], answer:1,
+            hint:'Una regla es perfecta para objetos pequeños.' }
+        ]
+      },
+      {
+        id:'w1a2', icon:'📊', title:'¿Qué unidad es mejor?',
+        desc:'Escoge la unidad apropiada de medida',
+        type:'mcq',
+        questions:[
+          { q:'¿En qué unidad medirías la distancia de tu casa a la escuela?',
+            opts:['Milímetros','Centímetros','Kilómetros','Pulgadas'], answer:2,
+            hint:'Las distancias largas se miden en kilómetros.' },
+          { q:'¿En qué unidad medirías el ancho de tu dedo?',
+            opts:['Kilómetros','Metros','Centímetros','Millas'], answer:2,
+            hint:'Los objetos pequeños se miden en centímetros.' },
+          { q:'¿En qué unidad medirías la longitud de la piscina olímpica?',
+            opts:['Milímetros','Metros','Kilómetros','Pies'], answer:1,
+            hint:'Las piscinas miden 50 metros.' },
+          { q:'¿En qué unidad medirías el grosor de una moneda?',
+            opts:['Kilómetros','Metros','Centímetros','Milímetros'], answer:3,
+            hint:'Las cosas muy pequeñas se miden en milímetros.' }
+        ]
+      },
+      {
+        id:'w1a3', icon:'🔄', title:'Conversiones de longitud',
+        desc:'Convierte entre unidades de medida',
+        type:'mcq',
+        questions:[
+          { q:'1 metro = _____ centímetros',
+            opts:['10','100','1,000','10,000'], answer:1,
+            hint:'Hay 100 centímetros en 1 metro.' },
+          { q:'1 kilómetro = _____ metros',
+            opts:['10','100','1,000','10,000'], answer:2,
+            hint:'Hay 1,000 metros en 1 kilómetro.' },
+          { q:'50 centímetros = _____ metro(s)',
+            opts:['5','0.5','5,000','0.05'], answer:1,
+            hint:'50 ÷ 100 = 0.5 metros' },
+          { q:'3 metros = _____ centímetros',
+            opts:['30','300','3,000','0.3'], answer:1,
+            hint:'3 × 100 = 300 centímetros' },
+          { q:'2 kilómetros = _____ metros',
+            opts:['200','20','2,000','20,000'], answer:2,
+            hint:'2 × 1,000 = 2,000 metros' }
+        ]
+      }
+    ]
+  },
+  {
+    id:'week2', label:'Semana 2', title:'Volumen y Peso', emoji:'⚖️',
+    color:'purple', badge:'#7c3aed', titleColor:'#c4b5fd',
+    activities:[
+      {
+        id:'w2a1', icon:'🔬', title:'Instrumentos de volumen y peso',
+        desc:'¿Qué instrumento usamos para medir?',
+        type:'mcq',
+        questions:[
+          { q:'¿Con qué instrumento mides cuánta agua cabe en un vaso?',
+            opts:['Báscula','Regla','Taza de medir','Termómetro'], answer:2,
+            hint:'Los líquidos se miden con tazas graduadas o vasos de medir.' },
+          { q:'¿Qué instrumento usas para saber cuánto pesa una manzana?',
+            opts:['Cinta métrica','Báscula','Taza de medir','Regla'], answer:1,
+            hint:'La báscula mide el peso.' },
+          { q:'La receta dice agregar 2 tazas de harina. ¿Qué usas para medir?',
+            opts:['Regla','Báscula','Taza de medir','Termómetro'], answer:2,
+            hint:'Los ingredientes de volumen se miden con tazas.' },
+          { q:'¿Qué instrumento usa el médico para saber cuánto pesas tú?',
+            opts:['Termómetro','Báscula','Cinta métrica','Regla'], answer:1,
+            hint:'El médico usa una báscula para pesar personas.' }
+        ]
+      },
+      {
+        id:'w2a2', icon:'🧴', title:'¿Qué unidad es apropiada?',
+        desc:'Elige la unidad correcta de volumen o peso',
+        type:'mcq',
+        questions:[
+          { q:'¿En qué unidad medirías el agua en una botella pequeña?',
+            opts:['Litros','Mililitros','Galones','Kilogramos'], answer:1,
+            hint:'Las cantidades pequeñas de líquido se miden en mililitros.' },
+          { q:'¿En qué unidad medirías el jugo en una jarra grande?',
+            opts:['Mililitros','Litros','Gramos','Metros'], answer:1,
+            hint:'Una jarra grande contiene litros.' },
+          { q:'¿En qué unidad medirías el peso de un lápiz?',
+            opts:['Kilogramos','Toneladas','Gramos','Litros'], answer:2,
+            hint:'Los objetos ligeros se pesan en gramos.' },
+          { q:'¿En qué unidad medirías el peso de un camión?',
+            opts:['Gramos','Kilogramos','Toneladas métricas','Litros'], answer:2,
+            hint:'Los camiones pesan mucho, se usan toneladas.' }
+        ]
+      },
+      {
+        id:'w2a3', icon:'⚡', title:'Equivalencias',
+        desc:'Convierte entre unidades de volumen y peso',
+        type:'mcq',
+        questions:[
+          { q:'1 litro = _____ mililitros',
+            opts:['10','100','1,000','10,000'], answer:2,
+            hint:'Hay 1,000 mililitros en 1 litro.' },
+          { q:'1 kilogramo = _____ gramos',
+            opts:['10','100','1,000','10,000'], answer:2,
+            hint:'Hay 1,000 gramos en 1 kilogramo.' },
+          { q:'500 mililitros = _____ litro(s)',
+            opts:['5','0.5','50','5,000'], answer:1,
+            hint:'500 ÷ 1,000 = 0.5 litros' },
+          { q:'2 kilogramos = _____ gramos',
+            opts:['200','20','2,000','20,000'], answer:2,
+            hint:'2 × 1,000 = 2,000 gramos' },
+          { q:'3 litros = _____ mililitros',
+            opts:['30','300','3,000','30,000'], answer:2,
+            hint:'3 × 1,000 = 3,000 mililitros' }
+        ]
+      }
+    ]
+  },
+  {
+    id:'week3', label:'Semana 3', title:'Perímetro y Área', emoji:'📐',
+    color:'amber', badge:'#b45309', titleColor:'#fcd34d',
+    activities:[
+      {
+        id:'w3a1', icon:'🔲', title:'Perímetro del rectángulo',
+        desc:'Calcula el perímetro usando la fórmula',
+        type:'mcq',
+        questions:[
+          { q:'Un rectángulo tiene largo 8 cm y ancho 3 cm. ¿Cuál es su perímetro?',
+            opts:['11 cm','22 cm','24 cm','32 cm'], answer:1,
+            hint:'Perímetro = 2 × (largo + ancho) = 2 × (8+3) = 22 cm' },
+          { q:'Un cuadrado tiene lados de 5 cm. ¿Cuál es su perímetro?',
+            opts:['10 cm','15 cm','20 cm','25 cm'], answer:2,
+            hint:'Perímetro del cuadrado = 4 × lado = 4 × 5 = 20 cm' },
+          { q:'Un rectángulo mide 10 m de largo y 4 m de ancho. ¿Cuál es su perímetro?',
+            opts:['14 m','28 m','40 m','80 m'], answer:1,
+            hint:'P = 2×(10+4) = 2×14 = 28 m' },
+          { q:'El perímetro de un cuadrado es 36 cm. ¿Cuánto mide cada lado?',
+            opts:['4 cm','6 cm','9 cm','12 cm'], answer:2,
+            hint:'36 ÷ 4 = 9 cm por lado' }
+        ]
+      },
+      {
+        id:'w3a2', icon:'⬜', title:'Área y perímetro en cuadrícula',
+        desc:'Usa la cuadrícula para calcular área y perímetro',
+        type:'grid',
+        questions:[
+          { q:'La figura amarilla está dibujada en la cuadrícula. ¿Cuántos cuadros cubre? (Esa es el área)',
+            gridW:6, gridH:5,
+            shape:[[1,0,0,0,0,0],[1,1,0,0,0,0],[1,1,1,0,0,0],[1,1,1,1,0,0],[1,1,1,1,1,0]],
+            area:15, perimeter:16,
+            opts:['10','12','15','18'], answer:2,
+            hint:'Cuenta todos los cuadros amarillos.' },
+          { q:'¿Cuál es el perímetro de un rectángulo de 4×3 cuadros?',
+            opts:['12','14','16','20'], answer:1,
+            hint:'P = 2×(4+3) = 14 unidades' },
+          { q:'Un rectángulo de 5×2 cuadros. ¿Cuál es su área?',
+            opts:['7','10','14','20'], answer:1,
+            hint:'Área = largo × ancho = 5×2 = 10 cuadros' }
+        ]
+      },
+      {
+        id:'w3a3', icon:'🔷', title:'Figuras irregulares',
+        desc:'Calcula perímetro de figuras irregulares',
+        type:'mcq',
+        questions:[
+          { q:'Una figura tiene lados de 3, 4, 5, 6 cm. ¿Cuál es su perímetro?',
+            opts:['15 cm','17 cm','18 cm','20 cm'], answer:2,
+            hint:'Suma todos los lados: 3+4+5+6 = 18 cm' },
+          { q:'Una figura en forma de L tiene lados: 2, 4, 2, 2, 4, 6 cm. ¿Perímetro?',
+            opts:['18 cm','20 cm','22 cm','24 cm'], answer:1,
+            hint:'2+4+2+2+4+6 = 20 cm' },
+          { q:'Un hexágono regular tiene lados de 3 cm cada uno. ¿Cuál es su perímetro?',
+            opts:['12 cm','15 cm','18 cm','24 cm'], answer:2,
+            hint:'Hexágono = 6 lados. 6 × 3 = 18 cm' },
+          { q:'El perímetro de una figura es 30 cm. Tiene 5 lados iguales. ¿Cuánto mide cada lado?',
+            opts:['5 cm','6 cm','7 cm','8 cm'], answer:1,
+            hint:'30 ÷ 5 = 6 cm' }
+        ]
+      }
+    ]
+  },
+  {
+    id:'week4', label:'Semana 4', title:'Dinero y Hora', emoji:'💰',
+    color:'pink', badge:'#be185d', titleColor:'#f9a8d4',
+    activities:[
+      {
+        id:'w4a1', icon:'🪙', title:'Contando monedas',
+        desc:'Identifica y suma el valor de las monedas',
+        type:'coins',
+        questions:[
+          { q:'¿Cuánto dinero hay en total?',
+            coins:[{type:'quarter',count:2},{type:'dime',count:1},{type:'nickel',count:2}],
+            answer:70, unit:'¢',
+            opts:['60¢','65¢','70¢','75¢'], answerIdx:2,
+            hint:'2 quarters=50¢, 1 dime=10¢, 2 nickels=10¢ → 50+10+10=70¢' },
+          { q:'¿Cuánto dinero hay en total?',
+            coins:[{type:'quarter',count:3},{type:'dime',count:2}],
+            answer:95, unit:'¢',
+            opts:['80¢','85¢','90¢','95¢'], answerIdx:3,
+            hint:'3 quarters=75¢, 2 dimes=20¢ → 75+20=95¢' },
+          { q:'¿Cuánto dinero hay en total?',
+            coins:[{type:'dollar',count:1},{type:'quarter',count:1},{type:'dime',count:1}],
+            answer:135, unit:'¢',
+            opts:['$1.25','$1.30','$1.35','$1.40'], answerIdx:2,
+            hint:'$1.00 + 25¢ + 10¢ = $1.35' },
+          { q:'Tienes 4 quarters y 3 dimes. ¿Cuánto es en total?',
+            coins:[], // text problem
+            answer:130, unit:'¢',
+            opts:['$1.20','$1.30','$1.40','$1.50'], answerIdx:1,
+            hint:'4×25¢=100¢, 3×10¢=30¢ → $1.00+$0.30=$1.30' }
+        ]
+      },
+      {
+        id:'w4a2', icon:'💵', title:'Monedas y billetes',
+        desc:'Suma el valor de monedas y billetes',
+        type:'mcq',
+        questions:[
+          { q:'Tienes un billete de $5 y 3 quarters. ¿Cuánto es en total?',
+            opts:['$5.50','$5.75','$6.00','$6.25'], answer:1,
+            hint:'$5.00 + 3×$0.25 = $5.00 + $0.75 = $5.75' },
+          { q:'Tienes un billete de $10, un billete de $1 y 2 dimes. ¿Total?',
+            opts:['$11.10','$11.20','$11.30','$11.40'], answer:1,
+            hint:'$10 + $1 + 2×$0.10 = $11.20' },
+          { q:'Tienes $20 y gastas $7.50. ¿Cuánto te sobra?',
+            opts:['$12.00','$12.50','$13.00','$13.50'], answer:1,
+            hint:'$20.00 - $7.50 = $12.50' },
+          { q:'Un lápiz cuesta $1.25. Pagas con un billete de $5. ¿Cuánto te devuelven?',
+            opts:['$3.50','$3.75','$4.00','$4.25'], answer:1,
+            hint:'$5.00 - $1.25 = $3.75' },
+          { q:'Tienes $2 quarters, $3 dimes y $1 nickel. ¿Cuánto tienes?',
+            opts:['$0.80','$0.85','$0.90','$0.95'], answer:1,
+            hint:'50¢ + 30¢ + 5¢ = 85¢' }
+        ]
+      },
+      {
+        id:'w4a3', icon:'💬', title:'Pregunta abierta: dinero',
+        desc:'Explica tu razonamiento con dinero',
+        type:'open',
+        questions:[
+          { q:'Tienes $10 para comprar útiles. Un cuaderno cuesta $2.50 y un lápiz cuesta $0.75. ¿Cuántos cuadernos y lápices puedes comprar? Escribe tu respuesta y explica cómo lo resolviste.',
+            rubric:'Respuesta correcta incluye: hacer cálculos, mencionar el total, y explicar el proceso.' }
+        ]
+      },
+      {
+        id:'w4a4', icon:'📚', title:'Problema verbal',
+        desc:'Resuelve problemas de dinero del mundo real',
+        type:'mcq',
+        questions:[
+          { q:'Ana tiene $15. Compra un libro por $6.50 y un marcador por $2.25. ¿Cuánto le queda?',
+            opts:['$5.75','$6.00','$6.25','$6.50'], answer:2,
+            hint:'$15 - $6.50 - $2.25 = $6.25' },
+          { q:'Tres amigos juntan $5 cada uno. ¿Pueden comprar un juego que cuesta $13.50?',
+            opts:['No, les falta $1.50','No, les falta $2.00','Sí, les sobra $1.50','Sí, les sobra $2.00'], answer:2,
+            hint:'3×$5=$15. $15-$13.50=$1.50 de sobra.' },
+          { q:'Un libro cuesta $8.95. Pagas con un billete de $20. ¿Cuánto te dan de cambio?',
+            opts:['$10.05','$11.05','$11.95','$12.05'], answer:1,
+            hint:'$20.00 - $8.95 = $11.05' },
+          { q:'Carlitos ahorra $3 cada semana. ¿Cuántas semanas necesita para tener $24?',
+            opts:['6 semanas','7 semanas','8 semanas','9 semanas'], answer:2,
+            hint:'$24 ÷ $3 = 8 semanas' }
+        ]
+      },
+      {
+        id:'w4a5', icon:'🕐', title:'Reloj digital',
+        desc:'Lee y escribe la hora en formato digital',
+        type:'mcq',
+        questions:[
+          { q:'El reloj muestra 3:45. ¿Cómo se lee?',
+            opts:['Tres y cuarenta y cinco','Las cuatro menos quince','Tres cuarenta y cinco','Todas son correctas'], answer:3,
+            hint:'3:45 se puede leer de varias formas correctas.' },
+          { q:'Son las 2:30 PM. ¿Cómo se escribe en formato de 24 horas?',
+            opts:['2:30','14:30','26:30','12:30'], answer:1,
+            hint:'2 PM + 12 = 14 en formato de 24 horas.' },
+          { q:'¿Cuántos minutos hay entre las 4:15 y las 4:45?',
+            opts:['20 minutos','25 minutos','30 minutos','35 minutos'], answer:2,
+            hint:'45 - 15 = 30 minutos' },
+          { q:'La escuela empieza a las 8:00 AM y termina a las 2:30 PM. ¿Cuántas horas hay clases?',
+            opts:['5 horas y media','6 horas','6 horas y media','7 horas'], answer:2,
+            hint:'De 8:00 a 2:30 = 6 horas y 30 minutos' },
+          { q:'Si son las 7:50 AM, ¿cuántos minutos faltan para las 8:00 AM?',
+            opts:['5 minutos','10 minutos','15 minutos','20 minutos'], answer:1,
+            hint:'60 - 50 = 10 minutos' }
+        ]
+      },
+      {
+        id:'w4a6', icon:'🕰️', title:'Reloj analógico',
+        desc:'Lee las manecillas del reloj',
+        type:'clock',
+        questions:[
+          { q:'¿Qué hora muestra el reloj?', hour:3, min:0,
+            opts:['3:00','3:15','3:30','4:00'], answer:0,
+            hint:'La manecilla corta apunta al 3, la larga al 12 → 3:00' },
+          { q:'¿Qué hora muestra el reloj?', hour:6, min:30,
+            opts:['6:00','6:30','7:00','6:15'], answer:1,
+            hint:'La manecilla larga al 6 = 30 minutos' },
+          { q:'¿Qué hora muestra el reloj?', hour:10, min:15,
+            opts:['10:15','10:30','10:45','10:00'], answer:0,
+            hint:'La manecilla larga al 3 = 15 minutos' },
+          { q:'¿Qué hora muestra el reloj?', hour:8, min:45,
+            opts:['8:30','8:45','9:00','8:15'], answer:1,
+            hint:'La manecilla larga al 9 = 45 minutos' }
+        ]
+      }
+    ]
+  }
+];
+
+// ═══════════════════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  session = JSON.parse(sessionStorage.getItem('mnm_session'));
+  if (!session) { window.location.href = 'index.html'; return; }
+
+  document.getElementById('studentNameDisplay').textContent = '👤 ' + session.name;
+  progress  = getData('mnm_progress_' + session.id, {});
+  locks     = getData('mnm_locks', {});
+
+  renderCurriculum();
+  updateTrophyCount();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  RENDER CURRICULUM
+// ═══════════════════════════════════════════════════════════
+function renderCurriculum() {
+  const main = document.getElementById('mainContent');
+  main.innerHTML = '';
+
+  CURRICULUM.forEach(week => {
+    const section = document.createElement('div');
+    section.className = `week-section week-${week.id.slice(-1)}`;
+
+    section.innerHTML = `
+      <div class="week-header">
+        <span class="week-badge" style="background:${week.badge}">${week.label}</span>
+        <span class="week-title" style="color:${week.titleColor}">${week.emoji} ${week.title}</span>
+      </div>
+      <div class="activities-grid" id="grid_${week.id}"></div>
+    `;
+    main.appendChild(section);
+
+    const grid = section.querySelector(`#grid_${week.id}`);
+    week.activities.forEach(act => {
+      grid.appendChild(buildActivityCard(act));
+    });
+  });
+}
+
+function buildActivityCard(act) {
+  const p = progress[act.id] || {};
+  const isLocked = locks[act.id] === false || locks[act.id + '_locked'] === true;
+  const isCompleted = p.completed;
+  const isPerfect = p.score === 100;
+
+  const card = document.createElement('div');
+  card.className = 'act-card' + (isLocked?' locked':'') + (isPerfect?' perfect':isCompleted?' completed':'');
+
+  let badgeHTML = '';
+  if (isPerfect) badgeHTML = '<span class="act-badge">🏆</span>';
+  else if (isCompleted) badgeHTML = '<span class="act-badge">🥉</span>';
+
+  let lockHTML = isLocked ? '<div class="lock-overlay">🔒</div>' : '';
+  let scoreHTML = isCompleted ? `<span class="act-score">${p.score}%</span>` : '';
+
+  card.innerHTML = `
+    ${badgeHTML}
+    <span class="act-icon">${act.icon}</span>
+    <div class="act-title">${act.title}</div>
+    <div class="act-desc">${act.desc}</div>
+    ${scoreHTML}
+    ${lockHTML}
+  `;
+
+  if (!isLocked) card.onclick = () => openActivity(act);
+  return card;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACTIVITY MODAL
+// ═══════════════════════════════════════════════════════════
+function openActivity(act) {
+  currentActivity = act;
+  currentQ = 0;
+  currentAnswers = [];
+
+  document.getElementById('modalIcon').textContent  = act.icon;
+  document.getElementById('modalTitle').textContent = act.title;
+  document.getElementById('modalBackdrop').classList.add('open');
+  renderQuestion();
+}
+
+function closeModal() {
+  document.getElementById('modalBackdrop').classList.remove('open');
+  currentActivity = null;
+}
+
+function renderQuestion() {
+  const act = currentActivity;
+  const questions = act.questions;
+  const q = questions[currentQ];
+  const pct = Math.round((currentQ / questions.length) * 100);
+  document.getElementById('progressBar').style.width = pct + '%';
+
+  const content = document.getElementById('activityContent');
+
+  if (act.type === 'mcq') {
+    content.innerHTML = `
+      <div class="modal-question">
+        ${currentQ+1}/${questions.length} — ${q.q}
+      </div>
+      <div class="options-grid">
+        ${q.opts.map((o,i)=>`<button class="opt-btn" id="opt${i}" onclick="selectAnswer(${i})">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()" disabled>Siguiente →</button>
+    `;
+  }
+  else if (act.type === 'grid') {
+    content.innerHTML = `
+      <div class="modal-question">${currentQ+1}/${questions.length} — ${q.q}</div>
+      ${buildGrid(q)}
+      <div class="options-grid">
+        ${q.opts.map((o,i)=>`<button class="opt-btn" id="opt${i}" onclick="selectAnswer(${i})">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()" disabled>Siguiente →</button>
+    `;
+  }
+  else if (act.type === 'coins') {
+    content.innerHTML = `
+      <div class="modal-question">${currentQ+1}/${questions.length} — ${q.q}</div>
+      ${buildCoins(q)}
+      <div class="options-grid">
+        ${q.opts.map((o,i)=>`<button class="opt-btn" id="opt${i}" onclick="selectAnswer(${i})">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()" disabled>Siguiente →</button>
+    `;
+  }
+  else if (act.type === 'clock') {
+    content.innerHTML = `
+      <div class="modal-question">${currentQ+1}/${questions.length} — ${q.q}</div>
+      ${buildClock(q.hour, q.min)}
+      <div class="options-grid">
+        ${q.opts.map((o,i)=>`<button class="opt-btn" id="opt${i}" onclick="selectAnswer(${i})">${o}</button>`).join('')}
+      </div>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext" onclick="nextQuestion()" disabled>Siguiente →</button>
+    `;
+  }
+  else if (act.type === 'open') {
+    content.innerHTML = `
+      <div class="modal-question">${q.q}</div>
+      <textarea class="text-input" id="openAnswer" placeholder="Escribe tu respuesta aquí..." rows="5"></textarea>
+      <div class="feedback" id="feedback"></div>
+      <button class="btn-next" id="btnNext" onclick="submitOpen()">Entregar respuesta ✓</button>
+    `;
+  }
+}
+
+// ─── Answer handlers ────────────────────────────────────────
+function selectAnswer(idx) {
+  const q = currentActivity.questions[currentQ];
+  const correct = q.answer;
+  const feedback = document.getElementById('feedback');
+
+  document.querySelectorAll('.opt-btn').forEach((b,i) => {
+    b.disabled = true;
+    if (i === correct) b.classList.add('correct');
+    else if (i === idx)  b.classList.add('wrong');
+  });
+
+  const isCorrect = idx === correct;
+  currentAnswers.push(isCorrect);
+
+  feedback.textContent = isCorrect
+    ? '✅ ¡Correcto! ' + (q.hint || '')
+    : '❌ No es correcto. ' + (q.hint || '');
+  feedback.className = 'feedback show ' + (isCorrect ? 'correct' : 'wrong');
+
+  document.getElementById('btnNext').disabled = false;
+}
+
+function nextQuestion() {
+  const questions = currentActivity.questions;
+  currentQ++;
+  if (currentQ >= questions.length) {
+    finishActivity();
+  } else {
+    renderQuestion();
+  }
+}
+
+function submitOpen() {
+  const val = document.getElementById('openAnswer').value.trim();
+  if (!val) return;
+  const feedback = document.getElementById('feedback');
+  currentAnswers.push(true); // open questions get credit for attempting
+  feedback.textContent = '✅ ¡Respuesta recibida! El maestro revisará tu trabajo.';
+  feedback.className = 'feedback show correct';
+  document.getElementById('btnNext').textContent = 'Terminar ✓';
+  document.getElementById('btnNext').onclick = finishActivity;
+  document.getElementById('openAnswer').disabled = true;
+}
+
+// ─── Grid builder ────────────────────────────────────────────
+function buildGrid(q) {
+  if (!q.shape) return `<p style="color:var(--indigo-200);margin-bottom:16px;">📊 Visualiza la figura en tu mente.</p>`;
+  let html = `<div class="grid-container" style="grid-template-columns:repeat(${q.gridW},36px);margin-bottom:16px;">`;
+  q.shape.forEach(row => row.forEach(cell => {
+    html += `<div class="grid-cell ${cell?'shape-cell':''}"></div>`;
+  }));
+  html += '</div>';
+  return html;
+}
+
+// ─── Coins builder ──────────────────────────────────────────
+const COIN_SVG = {
+  penny: `<svg width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="#b45309"/><circle cx="20" cy="20" r="14" fill="#d97706" fill-opacity="0.5"/><text x="20" y="25" text-anchor="middle" font-size="14" font-weight="bold" fill="white">1¢</text></svg>`,
+  nickel:`<svg width="44" height="44" viewBox="0 0 44 44"><circle cx="22" cy="22" r="20" fill="#9ca3af"/><circle cx="22" cy="22" r="16" fill="#d1d5db" fill-opacity="0.5"/><text x="22" y="27" text-anchor="middle" font-size="13" font-weight="bold" fill="#1f2937">5¢</text></svg>`,
+  dime: `<svg width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#6b7280"/><circle cx="18" cy="18" r="12" fill="#9ca3af" fill-opacity="0.5"/><text x="18" y="23" text-anchor="middle" font-size="11" font-weight="bold" fill="white">10¢</text></svg>`,
+  quarter:`<svg width="48" height="48" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#9ca3af"/><circle cx="24" cy="24" r="18" fill="#d1d5db" fill-opacity="0.4"/><text x="24" y="29" text-anchor="middle" font-size="13" font-weight="bold" fill="#1f2937">25¢</text></svg>`,
+  dollar:`<svg width="52" height="52" viewBox="0 0 52 52"><circle cx="26" cy="26" r="24" fill="#d97706"/><circle cx="26" cy="26" r="20" fill="#fbbf24" fill-opacity="0.4"/><text x="26" y="31" text-anchor="middle" font-size="13" font-weight="bold" fill="#1f2937">$1</text></svg>`
+};
+function buildCoins(q) {
+  if (!q.coins || q.coins.length === 0) return '<p style="color:var(--indigo-200);margin-bottom:16px;">💰 Lee el problema y calcula.</p>';
+  let html = '<div class="coins-area">';
+  q.coins.forEach(c => {
+    for (let i=0; i<c.count; i++) html += `<span class="coin">${COIN_SVG[c.type]||''}</span>`;
+  });
+  html += '</div>';
+  return html;
+}
+
+// ─── Clock builder ──────────────────────────────────────────
+function buildClock(hour, min) {
+  const hourDeg = (hour % 12) * 30 + min * 0.5;
+  const minDeg  = min * 6;
+  const numbers = [12,1,2,3,4,5,6,7,8,9,10,11];
+  const positions = [
+    {top:'4px',left:'50%',transform:'translateX(-50%)'},
+    {top:'18px',right:'22px'},{top:'46px',right:'8px'},{top:'82px',right:'2px'},
+    {bottom:'46px',right:'8px'},{bottom:'18px',right:'22px'},
+    {bottom:'4px',left:'50%',transform:'translateX(-50%)'},
+    {bottom:'18px',left:'22px'},{bottom:'46px',left:'8px'},
+    {top:'82px',left:'2px'},{top:'46px',left:'8px'},{top:'18px',left:'22px'}
+  ];
+  let numbersHTML = numbers.map((n,i) => {
+    const s = Object.entries(positions[i]).map(([k,v])=>`${k}:${v}`).join(';');
+    return `<span class="clock-number" style="${s}">${n}</span>`;
+  }).join('');
+  return `
+    <div class="clock-face" style="margin-bottom:20px">
+      ${numbersHTML}
+      <div class="clock-hand hand-hour" style="transform:rotate(${hourDeg}deg)"></div>
+      <div class="clock-hand hand-min"  style="transform:rotate(${minDeg}deg)"></div>
+      <div class="hand-center"></div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  FINISH ACTIVITY
+// ═══════════════════════════════════════════════════════════
+function finishActivity() {
+  const act = currentActivity;
+  const correct = currentAnswers.filter(Boolean).length;
+  const total   = currentAnswers.length || 1;
+  const score   = Math.round((correct / total) * 100);
+  const wasPerfect = score === 100;
+
+  // Save progress
+  const wasCompleted = (progress[act.id] || {}).completed;
+  progress[act.id] = { completed: true, score, timestamp: new Date().toISOString() };
+  setData('mnm_progress_' + session.id, progress);
+
+  closeModal();
+  renderCurriculum();
+
+  // Update trophies
+  updateTrophyCount();
+
+  // Show prize popup
+  setTimeout(() => {
+    if (wasPerfect) {
+      showPrize('🏆', '¡Perfecto! ¡100%!', `¡Ganaste un trofeo dorado, ${session.name}!`);
+      spawnConfetti();
+    } else {
+      showPrize('🥉', '¡Actividad completada!', `Obtuviste ${score}% — ¡sigue practicando!`);
+    }
+  }, 300);
+}
+
+function updateTrophyCount() {
+  const allProgress = Object.values(progress);
+  const trophies = allProgress.filter(p => p.score === 100).length;
+  const medals   = allProgress.filter(p => p.completed).length;
+  document.getElementById('trophyCount').textContent = trophies;
+  document.getElementById('medalCount').textContent  = medals;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PRIZE POPUP
+// ═══════════════════════════════════════════════════════════
+function showPrize(emoji, title, sub) {
+  document.getElementById('prizeEmoji').textContent = emoji;
+  document.getElementById('prizeTitle').textContent = title;
+  document.getElementById('prizeSub').textContent   = sub;
+  document.getElementById('prizePopup').classList.add('show');
+}
+function closePrize() {
+  document.getElementById('prizePopup').classList.remove('show');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CONFETTI
+// ═══════════════════════════════════════════════════════════
+function spawnConfetti() {
+  const colors = ['#fbbf24','#818cf8','#2dd4bf','#f9a8d4','#86efac'];
+  for (let i=0;i<60;i++) {
+    const c = document.createElement('div');
+    c.className = 'confetti-piece';
+    c.style.cssText = `
+      left:${Math.random()*100}vw;
+      top:-20px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+      animation-delay:${Math.random()*1}s;
+      animation-duration:${1.5+Math.random()*1}s;
+    `;
+    document.body.appendChild(c);
+    setTimeout(()=>c.remove(), 3000);
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('mnm_session');
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>

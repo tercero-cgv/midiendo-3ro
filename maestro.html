@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Panel del Maestro — Midiendo Nuestro Mundo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --indigo-900:#1e1b4b;--indigo-800:#312e81;--indigo-700:#3730a3;
+  --indigo-600:#4338ca;--indigo-500:#6366f1;--indigo-400:#818cf8;
+  --indigo-200:#c7d2fe;--indigo-100:#e0e7ff;
+  --amber-400:#fbbf24;--amber-300:#fcd34d;
+  --teal-500:#14b8a6;--teal-400:#2dd4bf;
+  --green-500:#22c55e;--green-400:#4ade80;
+  --red-400:#f87171;--red-500:#ef4444;
+  --white:#fff;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Nunito',sans-serif;background:linear-gradient(160deg,var(--indigo-900) 0%,#0f172a 100%);min-height:100vh;color:white;}
+
+/* ── Login screen ─────────────────────────────────────── */
+#loginScreen {
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+}
+.login-card {
+  background:rgba(255,255,255,0.07);backdrop-filter:blur(20px);
+  border:1px solid rgba(255,255,255,0.15);border-radius:28px;
+  padding:48px 44px;width:100%;max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.4);
+  animation:slideUp 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+.login-logo{text-align:center;font-size:52px;margin-bottom:12px;}
+.login-title{font-family:'Fredoka One',cursive;font-size:24px;text-align:center;margin-bottom:4px;}
+.login-sub{text-align:center;color:var(--indigo-200);font-size:13px;font-weight:700;margin-bottom:32px;}
+.form-group{margin-bottom:18px;}
+label{display:block;color:var(--indigo-200);font-size:12px;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;}
+input{width:100%;padding:13px 16px;border-radius:12px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.08);color:white;font-family:'Nunito',sans-serif;font-size:16px;font-weight:700;outline:none;transition:border-color 0.2s;}
+input:focus{border-color:var(--indigo-400);}
+input[type=password]{letter-spacing:4px;}
+.btn-primary{width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--indigo-500),var(--indigo-600));color:white;font-family:'Fredoka One',cursive;font-size:18px;cursor:pointer;box-shadow:0 4px 16px rgba(99,102,241,0.4);transition:transform 0.15s,box-shadow 0.15s;}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(99,102,241,0.5);}
+.login-error{color:#fca5a5;font-size:13px;font-weight:700;text-align:center;margin-bottom:12px;display:none;}
+.login-error.show{display:block;}
+.back-link{text-align:center;margin-top:18px;}
+.back-link a{color:var(--indigo-300,#a5b4fc);font-size:13px;font-weight:700;text-decoration:none;opacity:0.6;transition:opacity 0.2s;}
+.back-link a:hover{opacity:1;}
+
+/* ── Dashboard ────────────────────────────────────────── */
+#dashboard{display:none;}
+.topbar{background:rgba(0,0,0,0.3);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.1);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-family:'Fredoka One',cursive;font-size:20px;display:flex;align-items:center;gap:10px;}
+.topbar-right{display:flex;gap:10px;}
+.btn-sm{padding:8px 18px;border-radius:10px;border:none;font-family:'Nunito',sans-serif;font-size:13px;font-weight:800;cursor:pointer;transition:all 0.2s;}
+.btn-ghost{background:rgba(255,255,255,0.1);color:white;}
+.btn-ghost:hover{background:rgba(255,255,255,0.2);}
+.btn-danger{background:rgba(239,68,68,0.2);color:#fca5a5;border:1px solid rgba(239,68,68,0.3);}
+.btn-danger:hover{background:rgba(239,68,68,0.3);}
+
+.dashboard-content{max-width:1100px;margin:0 auto;padding:28px 20px;}
+
+/* ── Tabs ─────────────────────────────────────────────── */
+.tabs{display:flex;gap:8px;margin-bottom:28px;background:rgba(0,0,0,0.2);padding:6px;border-radius:16px;width:fit-content;}
+.tab{padding:10px 24px;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;transition:all 0.2s;border:none;color:rgba(255,255,255,0.5);background:transparent;}
+.tab.active{background:var(--indigo-600);color:white;box-shadow:0 2px 12px rgba(99,102,241,0.4);}
+
+/* ── Section cards ────────────────────────────────────── */
+.section-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:24px;margin-bottom:20px;}
+.section-title{font-family:'Fredoka One',cursive;font-size:18px;margin-bottom:18px;display:flex;align-items:center;gap:8px;}
+
+/* ── Student table ───────────────────────────────────── */
+.student-table{width:100%;border-collapse:collapse;}
+.student-table th{text-align:left;color:var(--indigo-200);font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;padding:8px 14px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.student-table td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.05);font-weight:700;vertical-align:middle;}
+.student-table tr:hover td{background:rgba(255,255,255,0.03);}
+.code-badge{background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:3px 10px;font-family:monospace;font-size:14px;color:var(--indigo-200);}
+.btn-icon{background:transparent;border:none;cursor:pointer;font-size:16px;padding:4px 8px;border-radius:8px;transition:background 0.15s;}
+.btn-icon:hover{background:rgba(255,255,255,0.1);}
+
+/* Add student form */
+.add-form{display:grid;grid-template-columns:1fr 1fr auto;gap:12px;margin-bottom:18px;align-items:end;}
+.input-sm{padding:11px 14px;border-radius:12px;border:2px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.07);color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;outline:none;width:100%;transition:border-color 0.2s;}
+.input-sm:focus{border-color:var(--indigo-400);}
+.btn-add{padding:11px 22px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--teal-500),var(--teal-400));color:white;font-family:'Fredoka One',cursive;font-size:15px;cursor:pointer;white-space:nowrap;transition:transform 0.15s;}
+.btn-add:hover{transform:translateY(-2px);}
+
+/* ── Progress table ───────────────────────────────────── */
+.progress-grid{overflow-x:auto;}
+.prog-table{width:100%;border-collapse:collapse;min-width:600px;}
+.prog-table th{padding:8px 12px;text-align:center;color:var(--indigo-200);font-size:11px;font-weight:800;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,0.08);}
+.prog-table th.name-col{text-align:left;}
+.prog-table td{padding:10px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.05);font-size:13px;font-weight:700;}
+.prog-table td.name-col{text-align:left;font-size:14px;}
+.score-chip{display:inline-flex;align-items:center;justify-content:center;width:44px;height:28px;border-radius:8px;font-size:12px;font-weight:800;}
+.score-100{background:rgba(251,191,36,0.25);color:var(--amber-300);}
+.score-pass{background:rgba(34,197,94,0.2);color:#86efac;}
+.score-fail{background:rgba(248,113,113,0.15);color:#fca5a5;}
+.score-none{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.2);}
+.trophy-total{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--amber-300);}
+
+/* ── Locks panel ──────────────────────────────────────── */
+.locks-grid{display:grid;gap:16px;}
+.week-lock-block{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:16px;padding:18px;}
+.week-lock-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.week-lock-title{font-family:'Fredoka One',cursive;font-size:16px;}
+.btn-unlock-week{padding:7px 16px;border-radius:10px;border:none;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:all 0.15s;}
+.btn-unlock-all{background:rgba(34,197,94,0.2);color:#86efac;border:1px solid rgba(34,197,94,0.3);}
+.btn-unlock-all:hover{background:rgba(34,197,94,0.35);}
+.btn-lock-all{background:rgba(239,68,68,0.15);color:#fca5a5;border:1px solid rgba(239,68,68,0.25);}
+.btn-lock-all:hover{background:rgba(239,68,68,0.25);}
+.activity-locks{display:flex;flex-direction:column;gap:8px;}
+.act-lock-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(255,255,255,0.04);border-radius:12px;}
+.act-lock-info{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700;}
+.lock-toggle{position:relative;width:44px;height:24px;cursor:pointer;}
+.lock-toggle input{opacity:0;width:0;height:0;}
+.toggle-track{position:absolute;inset:0;background:rgba(255,255,255,0.15);border-radius:12px;transition:background 0.2s;}
+.lock-toggle input:checked + .toggle-track{background:var(--green-500);}
+.toggle-thumb{position:absolute;top:3px;left:3px;width:18px;height:18px;background:white;border-radius:50%;transition:transform 0.2s;box-shadow:0 1px 4px rgba(0,0,0,0.3);}
+.lock-toggle input:checked + .toggle-track .toggle-thumb{transform:translateX(20px);}
+
+/* ── Redeem trophies ──────────────────────────────────── */
+.redeem-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.redeem-card{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:18px;text-align:center;}
+.redeem-name{font-weight:800;font-size:16px;margin-bottom:8px;}
+.redeem-counts{display:flex;justify-content:center;gap:12px;margin-bottom:12px;}
+.redeem-count{background:rgba(251,191,36,0.15);border:1px solid rgba(251,191,36,0.3);border-radius:10px;padding:6px 14px;font-size:14px;font-weight:800;color:var(--amber-300);}
+.btn-redeem{padding:8px 20px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--amber-300),var(--amber-400));color:var(--indigo-900);font-family:'Fredoka One',cursive;font-size:14px;cursor:pointer;transition:transform 0.15s;}
+.btn-redeem:hover{transform:scale(1.05);}
+.btn-redeem:disabled{opacity:0.3;cursor:not-allowed;transform:none;}
+
+/* ── Toast ────────────────────────────────────────────── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--indigo-600);border:1px solid rgba(255,255,255,0.2);border-radius:14px;padding:14px 20px;font-weight:700;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,0.3);z-index:9999;transform:translateY(80px);opacity:0;transition:all 0.3s;pointer-events:none;}
+.toast.show{transform:translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ────────────────────────────────────────────────── -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">🔐</div>
+    <div class="login-title">Panel del Maestro</div>
+    <div class="login-sub">Midiendo Nuestro Mundo · 3er Grado</div>
+    <div class="form-group">
+      <label>Código maestro</label>
+      <input type="password" id="masterCode" placeholder="••••••••" maxlength="30"/>
+    </div>
+    <div class="login-error" id="loginError">⚠️ Código incorrecto</div>
+    <button class="btn-primary" onclick="teacherLogin()">Acceder al panel</button>
+    <div class="back-link"><a href="index.html">← Volver al inicio</a></div>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ─────────────────────────────────────────────── -->
+<div id="dashboard">
+  <div class="topbar">
+    <div class="topbar-title">📏 Panel del Maestro</div>
+    <div class="topbar-right">
+      <button class="btn-sm btn-ghost" onclick="refreshAll()">🔄 Actualizar</button>
+      <button class="btn-sm btn-danger" onclick="teacherLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="dashboard-content">
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('students')">👥 Estudiantes</button>
+      <button class="tab" onclick="switchTab('progress')">📊 Progreso</button>
+      <button class="tab" onclick="switchTab('locks')">🔒 Candados</button>
+      <button class="tab" onclick="switchTab('trophies')">🏆 Trofeos</button>
+    </div>
+
+    <!-- STUDENTS TAB -->
+    <div id="tab-students">
+      <div class="section-card">
+        <div class="section-title">➕ Agregar estudiante</div>
+        <div class="add-form">
+          <div>
+            <label style="color:var(--indigo-200);font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:4px;display:block;">Nombre</label>
+            <input class="input-sm" id="newName" placeholder="Ej: María García" type="text"/>
+          </div>
+          <div>
+            <label style="color:var(--indigo-200);font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:4px;display:block;">Código secreto</label>
+            <input class="input-sm" id="newCode" placeholder="Ej: maria123" type="text" maxlength="20"/>
+          </div>
+          <button class="btn-add" onclick="addStudent()">+ Agregar</button>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-title">👥 Lista de estudiantes</div>
+        <table class="student-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Código</th>
+              <th>Actividades completadas</th>
+              <th>Trofeos 🏆</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="studentsTableBody"></tbody>
+        </table>
+        <p id="noStudentsMsg" style="color:var(--indigo-200);text-align:center;padding:20px;font-weight:700;">No hay estudiantes todavía. ¡Agrega el primero!</p>
+      </div>
+    </div>
+
+    <!-- PROGRESS TAB -->
+    <div id="tab-progress" style="display:none">
+      <div class="section-card">
+        <div class="section-title">📊 Progreso de todos los estudiantes</div>
+        <div class="progress-grid" id="progressGrid"></div>
+      </div>
+    </div>
+
+    <!-- LOCKS TAB -->
+    <div id="tab-locks" style="display:none">
+      <div class="section-card">
+        <div class="section-title">🔒 Control de candados por actividad</div>
+        <p style="color:var(--indigo-200);font-size:13px;font-weight:700;margin-bottom:20px;">
+          Activa (verde) para liberar una actividad. Desactiva para bloquearla. Los cambios se aplican inmediatamente.
+        </p>
+        <div class="locks-grid" id="locksGrid"></div>
+      </div>
+    </div>
+
+    <!-- TROPHIES TAB -->
+    <div id="tab-trophies" style="display:none">
+      <div class="section-card">
+        <div class="section-title">🏆 Canjeo de trofeos</div>
+        <p style="color:var(--indigo-200);font-size:13px;font-weight:700;margin-bottom:20px;">
+          Cuando un estudiante canjea sus trofeos contigo, presiona "Canjear" para reiniciar su contador.
+        </p>
+        <div class="redeem-grid" id="redeemGrid"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  CONSTANTS
+// ═══════════════════════════════════════════════════════════
+const MASTER_CODE = 'lozada2025';
+
+const ACTIVITIES_META = [
+  {id:'w1a1',icon:'📐',title:'¿Qué instrumento usamos?',week:'Semana 1'},
+  {id:'w1a2',icon:'📊',title:'¿Qué unidad es mejor?',week:'Semana 1'},
+  {id:'w1a3',icon:'🔄',title:'Conversiones de longitud',week:'Semana 1'},
+  {id:'w2a1',icon:'🔬',title:'Instrumentos vol/peso',week:'Semana 2'},
+  {id:'w2a2',icon:'🧴',title:'Unidad apropiada',week:'Semana 2'},
+  {id:'w2a3',icon:'⚡',title:'Equivalencias',week:'Semana 2'},
+  {id:'w3a1',icon:'🔲',title:'Perímetro rectángulo',week:'Semana 3'},
+  {id:'w3a2',icon:'⬜',title:'Área en cuadrícula',week:'Semana 3'},
+  {id:'w3a3',icon:'🔷',title:'Figuras irregulares',week:'Semana 3'},
+  {id:'w4a1',icon:'🪙',title:'Contando monedas',week:'Semana 4'},
+  {id:'w4a2',icon:'💵',title:'Monedas y billetes',week:'Semana 4'},
+  {id:'w4a3',icon:'💬',title:'Pregunta abierta',week:'Semana 4'},
+  {id:'w4a4',icon:'📚',title:'Problema verbal',week:'Semana 4'},
+  {id:'w4a5',icon:'🕐',title:'Reloj digital',week:'Semana 4'},
+  {id:'w4a6',icon:'🕰️',title:'Reloj analógico',week:'Semana 4'},
+];
+
+const WEEKS_META = [
+  {id:'week1',label:'Semana 1 — Longitudes',activities:['w1a1','w1a2','w1a3']},
+  {id:'week2',label:'Semana 2 — Volumen y Peso',activities:['w2a1','w2a2','w2a3']},
+  {id:'week3',label:'Semana 3 — Perímetro y Área',activities:['w3a1','w3a2','w3a3']},
+  {id:'week4',label:'Semana 4 — Dinero y Hora',activities:['w4a1','w4a2','w4a3','w4a4','w4a5','w4a6']},
+];
+
+// ═══════════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════════
+function getData(k,fb){try{return JSON.parse(localStorage.getItem(k))??fb;}catch{return fb;}}
+function setData(k,v){localStorage.setItem(k,JSON.stringify(v));}
+
+function getStudents(){return getData('mnm_students',[]);}
+function saveStudents(s){setData('mnm_students',s);}
+function getLocks(){return getData('mnm_locks',{});}
+function saveLocks(l){setData('mnm_locks',l);}
+function getStudentProgress(id){return getData('mnm_progress_'+id,{});}
+
+// ═══════════════════════════════════════════════════════════
+//  LOGIN
+// ═══════════════════════════════════════════════════════════
+function teacherLogin(){
+  const code=document.getElementById('masterCode').value.trim();
+  if(code===MASTER_CODE){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+    refreshAll();
+  } else {
+    const err=document.getElementById('loginError');
+    err.classList.add('show');
+    setTimeout(()=>err.classList.remove('show'),3000);
+  }
+}
+function teacherLogout(){
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('loginScreen').style.display='flex';
+  document.getElementById('masterCode').value='';
+}
+document.getElementById('masterCode').addEventListener('keydown',e=>{if(e.key==='Enter')teacherLogin();});
+
+// ═══════════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════════
+function switchTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');
+  event.target.classList.add('active');
+  document.getElementById('tab-'+tab).style.display='block';
+  if(tab==='progress')renderProgress();
+  if(tab==='locks')renderLocks();
+  if(tab==='trophies')renderTrophies();
+}
+
+function refreshAll(){
+  renderStudents();
+  renderProgress();
+  renderLocks();
+  renderTrophies();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  STUDENTS
+// ═══════════════════════════════════════════════════════════
+function addStudent(){
+  const name=document.getElementById('newName').value.trim();
+  const code=document.getElementById('newCode').value.trim();
+  if(!name||!code){showToast('⚠️ Escribe nombre y código');return;}
+  const students=getStudents();
+  const id='s_'+Date.now();
+  students.push({id,name,code});
+  saveStudents(students);
+  document.getElementById('newName').value='';
+  document.getElementById('newCode').value='';
+  renderStudents();
+  showToast('✅ Estudiante agregado: '+name);
+}
+
+function deleteStudent(id){
+  if(!confirm('¿Eliminar este estudiante? Se borrará su progreso.'))return;
+  let students=getStudents().filter(s=>s.id!==id);
+  saveStudents(students);
+  localStorage.removeItem('mnm_progress_'+id);
+  renderStudents();
+  renderProgress();
+  renderTrophies();
+  showToast('🗑️ Estudiante eliminado');
+}
+
+function renderStudents(){
+  const students=getStudents();
+  const tbody=document.getElementById('studentsTableBody');
+  const noMsg=document.getElementById('noStudentsMsg');
+  noMsg.style.display=students.length?'none':'block';
+  tbody.innerHTML='';
+  students.forEach(s=>{
+    const prog=getStudentProgress(s.id);
+    const completed=Object.values(prog).filter(p=>p.completed).length;
+    const trophies=Object.values(prog).filter(p=>p.score===100).length;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td>${s.name}</td>
+      <td><span class="code-badge">${s.code}</span></td>
+      <td>${completed}/15</td>
+      <td>🏆 ${trophies} · 🥉 ${completed}</td>
+      <td>
+        <button class="btn-icon" title="Eliminar" onclick="deleteStudent('${s.id}')">🗑️</button>
+      </td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PROGRESS
+// ═══════════════════════════════════════════════════════════
+function renderProgress(){
+  const students=getStudents();
+  const grid=document.getElementById('progressGrid');
+  if(!students.length){grid.innerHTML='<p style="color:var(--indigo-200);font-weight:700;padding:20px">No hay estudiantes todavía.</p>';return;}
+
+  let html=`<table class="prog-table"><thead><tr><th class="name-col">Estudiante</th>`;
+  ACTIVITIES_META.forEach(a=>{ html+=`<th title="${a.title}">${a.icon}</th>`; });
+  html+=`<th>Total 🏆</th></tr></thead><tbody>`;
+
+  students.forEach(s=>{
+    const prog=getStudentProgress(s.id);
+    html+=`<tr><td class="name-col">${s.name}</td>`;
+    let trophies=0;
+    ACTIVITIES_META.forEach(a=>{
+      const p=prog[a.id];
+      if(!p){html+=`<td><span class="score-chip score-none">—</span></td>`;return;}
+      if(p.score===100){trophies++;html+=`<td><span class="score-chip score-100">🏆</span></td>`;}
+      else if(p.completed){html+=`<td><span class="score-chip score-pass">${p.score}%</span></td>`;}
+      else{html+=`<td><span class="score-chip score-fail">${p.score}%</span></td>`;}
+    });
+    html+=`<td><span class="trophy-total">🏆 ${trophies}</span></td></tr>`;
+  });
+  html+='</tbody></table>';
+  grid.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  LOCKS
+// ═══════════════════════════════════════════════════════════
+function renderLocks(){
+  const locks=getLocks();
+  const grid=document.getElementById('locksGrid');
+  grid.innerHTML='';
+
+  WEEKS_META.forEach(week=>{
+    const block=document.createElement('div');
+    block.className='week-lock-block';
+
+    const allUnlocked=week.activities.every(id=>locks[id]!==false);
+
+    block.innerHTML=`
+      <div class="week-lock-header">
+        <span class="week-lock-title">${week.label}</span>
+        <div style="display:flex;gap:8px">
+          <button class="btn-unlock-week btn-unlock-all" onclick="unlockWeek('${week.id}')">✅ Liberar semana</button>
+          <button class="btn-unlock-week btn-lock-all"   onclick="lockWeek('${week.id}')">🔒 Bloquear</button>
+        </div>
+      </div>
+      <div class="activity-locks" id="acts_${week.id}"></div>
+    `;
+    grid.appendChild(block);
+
+    const actsContainer=block.querySelector('#acts_'+week.id);
+    week.activities.forEach(actId=>{
+      const meta=ACTIVITIES_META.find(a=>a.id===actId);
+      const isUnlocked=locks[actId]!==false;
+      const row=document.createElement('div');
+      row.className='act-lock-row';
+      row.innerHTML=`
+        <div class="act-lock-info">
+          <span>${meta.icon}</span>
+          <span>${meta.title}</span>
+        </div>
+        <label class="lock-toggle">
+          <input type="checkbox" ${isUnlocked?'checked':''} onchange="toggleLock('${actId}',this.checked)"/>
+          <div class="toggle-track"><div class="toggle-thumb"></div></div>
+        </label>
+      `;
+      actsContainer.appendChild(row);
+    });
+  });
+}
+
+function toggleLock(actId, unlocked){
+  const locks=getLocks();
+  locks[actId]=unlocked ? true : false;
+  saveLocks(locks);
+  showToast(unlocked ? '✅ Actividad liberada' : '🔒 Actividad bloqueada');
+}
+
+function unlockWeek(weekId){
+  const week=WEEKS_META.find(w=>w.id===weekId);
+  const locks=getLocks();
+  week.activities.forEach(id=>{ locks[id]=true; });
+  saveLocks(locks);
+  renderLocks();
+  showToast('✅ Semana liberada completa');
+}
+
+function lockWeek(weekId){
+  const week=WEEKS_META.find(w=>w.id===weekId);
+  const locks=getLocks();
+  week.activities.forEach(id=>{ locks[id]=false; });
+  saveLocks(locks);
+  renderLocks();
+  showToast('🔒 Semana bloqueada');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TROPHIES / REDEEM
+// ═══════════════════════════════════════════════════════════
+function renderTrophies(){
+  const students=getStudents();
+  const grid=document.getElementById('redeemGrid');
+  if(!students.length){grid.innerHTML='<p style="color:var(--indigo-200);font-weight:700;padding:20px">No hay estudiantes todavía.</p>';return;}
+  grid.innerHTML='';
+  students.forEach(s=>{
+    const prog=getStudentProgress(s.id);
+    const trophies=Object.values(prog).filter(p=>p.score===100).length;
+    const medals=Object.values(prog).filter(p=>p.completed).length;
+    const redeemed=getData('mnm_redeemed_'+s.id,0);
+    const available=trophies-redeemed;
+
+    const card=document.createElement('div');
+    card.className='redeem-card';
+    card.innerHTML=`
+      <div class="redeem-name">${s.name}</div>
+      <div class="redeem-counts">
+        <span class="redeem-count">🏆 ${trophies}</span>
+        <span class="redeem-count">🥉 ${medals}</span>
+      </div>
+      <div style="font-size:12px;color:var(--indigo-200);font-weight:700;margin-bottom:10px">
+        ${available > 0 ? `🎉 ${available} trofeo(s) por canjear` : 'Sin trofeos pendientes'}
+      </div>
+      <button class="btn-redeem" onclick="redeemTrophies('${s.id}','${s.name}',${trophies})" ${available===0?'disabled':''}>
+        Canjear trofeos
+      </button>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function redeemTrophies(studentId, name, trophies){
+  setData('mnm_redeemed_'+studentId, trophies);
+  renderTrophies();
+  showToast(`🎉 Trofeos de ${name} canjeados`);
+}
+
+// ═══════════════════════════════════════════════════════════
+//  TOAST
+// ═══════════════════════════════════════════════════════════
+let toastTimer=null;
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.classList.add('show');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>
